@@ -1,7 +1,6 @@
 <template>
   <div id="app">
     <header>
-      <!--
       <DataFilter
         :data="carsData"
         :herkunftOptions="getCountrys(carsData)"
@@ -9,7 +8,6 @@
         @herkunftSelect="onHerkunftSelect($event)"
         @herstellerSelect="onHerstellerSelect($event)"
       />
-      -->
       <button
         id="show-modal"
         @click="showComparisonModal = true"
@@ -19,12 +17,12 @@
       </button>
     </header>
     <CarCard
-      v-for="(car, index) in normalizedCarData"
-      :key="index"
-      :carData="carsData[index]"
+      v-for="(car, index) in filteredCarsData"
+      :key="car.id+index"
+      :carData="getCardData(car.id)"
       :normalizedData="car"
-      @carChecked="onCarChecked($event, index)"
-      :checked="checkedCars.includes(index)"
+      @carChecked="onCarChecked($event, car.id)"
+      :checked="checkedCars.includes(car.id)"
       :checkBoxDisabled="checkedCars.length === 3"
     />
     <ComparisonModal
@@ -37,7 +35,7 @@
 
 <script>
 import CarCard from "./components/CarCard";
-// import DataFilter from "./components/Filter";
+import DataFilter from "./components/Filter";
 import ComparisonModal from "./components/ComparisonModal";
 const carsDE = require("./assets/carsDE.csv");
 
@@ -46,7 +44,7 @@ export default {
   components: {
     CarCard,
     ComparisonModal,
-    // DataFilter,
+    DataFilter,
   },
   data() {
     return {
@@ -61,22 +59,27 @@ export default {
   },
   computed: {
     comparisonModalData: function() {
-      return this.checkedCars.map((index) => ({
-        carData: this.carsData[index],
-        normalizedData: this.normalizedCarData[index],
+      return this.checkedCars.map((carId) => ({
+        carData: this.carsData.find(car => car.id === carId),
+        normalizedData: this.normalizedCarData.find(car => car.id === carId),
       }));
     }
   },
   mounted() {
+    this.carsData = this.carsData.map(car => ({...car, id: car.Hersteller+car.Model}))
     this.normalizedCarData = this.normalizeCarData(carsDE);
+    this.filterData()
   },
   methods: {
-    onCarChecked(event, index) {
+    getCardData(id) {
+        return this.carsData.find(car => car.id === id)
+    },
+    onCarChecked(event, carId) {
       const checked = event.target.checked;
       if (checked && this.checkedCars.length < 3) {
-        this.checkedCars.push(index);
+        this.checkedCars.push(carId);
       } else {
-        this.checkedCars = this.checkedCars.filter((car) => car !== index);
+        this.checkedCars = this.checkedCars.filter((car) => car !== carId);
       }
     },
     filterData() {
@@ -85,7 +88,7 @@ export default {
       const filtered = this.normalizedCarData
         .filter((el) => countrys.includes(el.Herkunft))
         .filter((el) => hersteller.includes(el.Hersteller));
-        this.filteredCarsData = filtered
+      this.filteredCarsData.splice(0, this.filteredCarsData.length, ...filtered)
     },
     normalizeCarData(dataSet) {
       // make deep copy of data
@@ -114,7 +117,7 @@ export default {
         });
       });
 
-      return normalizedCarData;
+      return normalizedCarData.map(car => ({...car, id: car.Hersteller+car.Model}))
     },
     getCountrys(carsData) {
       return carsData
