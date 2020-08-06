@@ -86,6 +86,6 @@ export default {
 
     .filter-container {
         width: 100%;
-        height: 100px;
+        height: 10vh;
     }
 </style>
